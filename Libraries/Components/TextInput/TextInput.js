@@ -34,6 +34,7 @@ const warning = require('fbjs/lib/warning');
 const PropTypes = React.PropTypes;
 
 const onlyMultiline = {
+  numerOfLines: true,
   onTextInput: true,
   children: true,
 };

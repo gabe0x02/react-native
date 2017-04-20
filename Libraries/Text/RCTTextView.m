@@ -264,6 +264,7 @@ static NSAttributedString *removeReactTagFromString(NSAttributedString *string)
   _scrollView.frame = frame;
   [self updateContentSize];
 
+  _textView.textContainer.maximumNumberOfLines = _numberOfLines.integerValue;
   _textView.textContainerInset = adjustedTextContainerInset;
   _placeholderView.textContainerInset = adjustedTextContainerInset;
 }
@@ -346,10 +347,46 @@ static NSAttributedString *removeReactTagFromString(NSAttributedString *string)
   [self updateFrames];
 }
 
+- (NSString *)text
+{
+  return _textView.text;
+}
+
+- (NSArray *)extractLines
+{
+  NSString *text = [self text];
+  NSMutableArray *lines = [@[] mutableCopy];
+
+  [_textView.layoutManager enumerateLineFragmentsForGlyphRange:NSMakeRange(0, text.length) usingBlock:^(CGRect rect, CGRect usedRect, NSTextContainer * _Nonnull textContainer, NSRange glyphRange, BOOL * _Nonnull stop) {
+    [lines addObject:[text substringWithRange:glyphRange]];
+  }];
+
+  return lines;
+}
+
 #pragma mark - UITextViewDelegate
 
 - (BOOL)textView:(RCTUITextView *)textView shouldChangeTextInRange:(NSRange)range replacementText:(NSString *)text
 {
+  if (textView.textContainer.maximumNumberOfLines > 0) {
+    NSString *newText = [textView.text stringByReplacingCharactersInRange:range withString:text];
+    CGSize boundingSize = CGSizeMake(self.frame.size.width, DBL_MAX);
+    CGSize textSize = [newText boundingRectWithSize:boundingSize
+                                            options:NSStringDrawingUsesLineFragmentOrigin
+                                         attributes:@{
+      NSFontAttributeName : (_textView.font ? _textView.font : [self defaultPlaceholderFont])
+    }
+                                            context:nil].size;
+    NSUInteger numberOfLines = textSize.height / textView.font.lineHeight;
+
+    if (numberOfLines > textView.textContainer.maximumNumberOfLines) {
+      return NO;
+    }
+  }
+
+  if (_blockTextShouldChange) {
+    return NO;
+  }
   if (textView.textWasPasted) {
     textView.textWasPasted = NO;
   } else {
@@ -643,7 +680,9 @@ static BOOL findMismatch(NSString *first, NSString *second, NSRange *firstRange,
     },
     @"target": self.reactTag,
     @"eventCount": @(_nativeEventCount),
+    @"lines": [self extractLines],
   });
+  [_eventDispatcher sendInputEventWithName:@"change" body:event];
 }
 
 - (void)textViewDidEndEditing:(UITextView *)textView
