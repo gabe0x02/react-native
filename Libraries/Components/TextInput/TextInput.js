@@ -34,6 +34,7 @@ const requireNativeComponent = require('requireNativeComponent');
 const PropTypes = React.PropTypes;
 
 const onlyMultiline = {
+  numerOfLines: true,
   onTextInput: true,
   children: true,
 };
