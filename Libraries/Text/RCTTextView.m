@@ -354,6 +354,8 @@ static NSAttributedString *removeReactTagFromString(NSAttributedString *string)
 
 - (BOOL)textView:(RCTUITextView *)textView shouldChangeTextInRange:(NSRange)range replacementText:(NSString *)text
 {
+  textView.textAlignment = NSTextAlignmentCenter;
+
   if (textView.textContainer.maximumNumberOfLines > 0) {
     if(textView.text.length < NSMaxRange(range)){
       return NO;
